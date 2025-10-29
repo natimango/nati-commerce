@@ -10,7 +10,7 @@
 -- =============================================
 CREATE TABLE events_user_events (
     id UUID DEFAULT uuid_generate_v4(),
-    event_id VARCHAR(255) NOT NULL UNIQUE, -- Deduplication key
+    event_id VARCHAR(255) NOT NULL, -- Deduplication key (unique with created_at)
 
     -- User context
     user_id UUID, -- FK to Medusa customer (null for anonymous)
@@ -61,7 +61,8 @@ CREATE TABLE events_user_events (
     -- Metadata
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    PRIMARY KEY (id, created_at)
+    PRIMARY KEY (id, created_at),
+    UNIQUE (event_id, created_at) -- Deduplication: unique event_id per partition
 ) PARTITION BY RANGE (created_at);
 
 -- Create indexes on the parent table
