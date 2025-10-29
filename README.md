@@ -72,48 +72,31 @@ nati-commerce/
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18+
-- Docker & Docker Compose
-- npm 9+
+**📖 See [QUICKSTART.md](./QUICKSTART.md) for the complete 5-minute setup guide!**
 
-### 1. Clone and Install
+### TL;DR
 
 ```bash
-git clone <repository-url>
-cd nati-commerce
+# 1. Install and start services
 npm install
-```
+docker compose up -d
 
-### 2. Set Up Environment Variables
-
-```bash
-cp .env.example .env
-# Edit .env with your credentials
-```
-
-### 3. Start Local Services
-
-```bash
-# Start PostgreSQL + Redis
-docker-compose up -d
-
-# Verify services are running
-docker-compose ps
-```
-
-### 4. Run Database Migrations
-
-```bash
+# 2. Setup database
+cd packages/database
 npm run migrate
-```
+npm run seed
+npm run verify
 
-### 5. Start Development Servers
-
-```bash
-# Start all services
+# 3. Start development
+cd ../..
 npm run dev
 ```
+
+### Detailed Guides
+
+- **Quick Setup**: [QUICKSTART.md](./QUICKSTART.md) - Get running in 5 minutes
+- **Database Testing**: [DATABASE_TESTING.md](./DATABASE_TESTING.md) - Complete testing guide
+- **Architecture**: [NATI_ARCHITECTURE_V1.2_CONSOLIDATED.md](./NATI_ARCHITECTURE_V1.2_CONSOLIDATED.md)
 
 Access points:
 - **Storefront**: http://localhost:3000
