@@ -8,5 +8,5 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL || 'postgresql://nati_user:nati_password@localhost:5432/nati_commerce',
   jwtSecret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  corsOrigins: process.env.CORS_ORIGINS?.split(',').map(origin => origin.trim()) || ['http://localhost:3000', 'http://localhost:3001'],
 }
