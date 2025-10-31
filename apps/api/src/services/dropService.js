@@ -1,63 +1,32 @@
 import pool from '../config/database.js'
 
 export const dropService = {
-  /**
-   * Get all drop collections with optional filtering and pagination
-   */
   async getAll(filters = {}) {
-    const { visibility, upcoming, active, limit = 20, offset = 0 } = filters
+    const { status, upcoming, active, limit = 20, offset = 0 } = filters
 
-    let query = `
-      SELECT
-        dc.id,
-        dc.name,
-        dc.slug,
-        dc.description,
-        dc.theme,
-        dc.story,
-        dc.drop_date,
-        dc.end_date,
-        dc.access_tiers,
-        dc.visibility,
-        dc.banner_image_url,
-        dc.teaser_video_url,
-        dc.waitlist_opens_at,
-        dc.max_waitlist_size,
-        dc.created_at,
-        dc.updated_at,
-        COUNT(DISTINCT dp.id) as product_count,
-        COUNT(DISTINCT dw.id) as waitlist_count
-      FROM drops_collections dc
-      LEFT JOIN drops_products dp ON dc.id = dp.collection_id
-      LEFT JOIN drops_waitlist dw ON dc.id = dw.collection_id AND dw.status = 'active'
-      WHERE 1=1
-    `
+    let query = "SELECT dc.id, dc.name, dc.slug, dc.theme, dc.story, dc.hero_image_url, dc.teaser_video_url, dc.announcement_at, dc.launch_at, dc.ends_at, dc.status, dc.waitlist_enabled, dc.pre_access_hours, dc.total_products, dc.total_inventory, dc.waitlist_count, dc.conversion_rate, dc.created_at, dc.updated_at FROM drops_collections dc WHERE 1=1"
     const params = []
     let paramCount = 1
 
-    if (visibility) {
-      query += ` AND dc.visibility = $${paramCount}`
-      params.push(visibility)
+    if (status) {
+      query += " AND dc.status = $" + paramCount.toString()
+      params.push(status)
       paramCount++
     }
 
     if (upcoming === 'true') {
-      query += ` AND dc.drop_date > NOW()`
+      query += " AND dc.launch_at > NOW()"
     }
 
     if (active === 'true') {
-      query += ` AND dc.drop_date <= NOW() AND dc.end_date >= NOW()`
+      query += " AND dc.status = 'live'"
     }
 
-    query += ` GROUP BY dc.id`
-
-    // Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM (${query}) as filtered`
+    const countQuery = "SELECT COUNT(*) as total FROM (" + query + ") as filtered"
     const countResult = await pool.query(countQuery, params)
     const total = parseInt(countResult.rows[0].total)
 
-    // Add ordering and pagination
-    query += ` ORDER BY dc.drop_date DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`
+    query += " ORDER BY dc.launch_at DESC LIMIT $" + paramCount.toString() + " OFFSET $" + (paramCount + 1).toString()
     params.push(limit, offset)
 
     const result = await pool.query(query, params)
@@ -71,37 +40,8 @@ export const dropService = {
     }
   },
 
-  /**
-   * Get drop collection by ID
-   */
   async getById(id) {
-    const query = `
-      SELECT
-        dc.id,
-        dc.name,
-        dc.slug,
-        dc.description,
-        dc.theme,
-        dc.story,
-        dc.drop_date,
-        dc.end_date,
-        dc.access_tiers,
-        dc.visibility,
-        dc.banner_image_url,
-        dc.teaser_video_url,
-        dc.waitlist_opens_at,
-        dc.max_waitlist_size,
-        dc.created_at,
-        dc.updated_at,
-        COUNT(DISTINCT dp.id) as product_count,
-        COUNT(DISTINCT dw.id) as waitlist_count
-      FROM drops_collections dc
-      LEFT JOIN drops_products dp ON dc.id = dp.collection_id
-      LEFT JOIN drops_waitlist dw ON dc.id = dw.collection_id AND dw.status = 'active'
-      WHERE dc.id = $1
-      GROUP BY dc.id
-    `
-
+    const query = "SELECT id, name, slug, theme, story, hero_image_url, teaser_video_url, announcement_at, launch_at, ends_at, status, waitlist_enabled, pre_access_hours, total_products, total_inventory, waitlist_count, conversion_rate, created_at, updated_at FROM drops_collections WHERE id = $1"
     const result = await pool.query(query, [id])
 
     if (result.rows.length === 0) {
@@ -111,37 +51,8 @@ export const dropService = {
     return result.rows[0]
   },
 
-  /**
-   * Get drop collection by slug
-   */
   async getBySlug(slug) {
-    const query = `
-      SELECT
-        dc.id,
-        dc.name,
-        dc.slug,
-        dc.description,
-        dc.theme,
-        dc.story,
-        dc.drop_date,
-        dc.end_date,
-        dc.access_tiers,
-        dc.visibility,
-        dc.banner_image_url,
-        dc.teaser_video_url,
-        dc.waitlist_opens_at,
-        dc.max_waitlist_size,
-        dc.created_at,
-        dc.updated_at,
-        COUNT(DISTINCT dp.id) as product_count,
-        COUNT(DISTINCT dw.id) as waitlist_count
-      FROM drops_collections dc
-      LEFT JOIN drops_products dp ON dc.id = dp.collection_id
-      LEFT JOIN drops_waitlist dw ON dc.id = dw.collection_id AND dw.status = 'active'
-      WHERE dc.slug = $1
-      GROUP BY dc.id
-    `
-
+    const query = "SELECT id, name, slug, theme, story, hero_image_url, teaser_video_url, announcement_at, launch_at, ends_at, status, waitlist_enabled, pre_access_hours, total_products, total_inventory, waitlist_count, conversion_rate, created_at, updated_at FROM drops_collections WHERE slug = $1"
     const result = await pool.query(query, [slug])
 
     if (result.rows.length === 0) {
@@ -151,69 +62,36 @@ export const dropService = {
     return result.rows[0]
   },
 
-  /**
-   * Get products in a drop collection
-   */
-  async getProducts(collectionId) {
-    const query = `
-      SELECT
-        dp.id,
-        dp.collection_id,
-        dp.product_id,
-        dp.allocation,
-        dp.tier_allocation,
-        dp.created_at
-      FROM drops_products dp
-      WHERE dp.collection_id = $1
-      ORDER BY dp.created_at ASC
-    `
-
-    const result = await pool.query(query, [collectionId])
+  async getProducts(dropId) {
+    const query = "SELECT id, drop_id, product_id, display_order, is_featured, allocated_inventory, reserved_inventory, sold_inventory, created_at FROM drops_products WHERE drop_id = $1 ORDER BY display_order ASC"
+    const result = await pool.query(query, [dropId])
     return result.rows
   },
 
-  /**
-   * Get waitlist for a drop collection
-   */
-  async getWaitlist(collectionId, filters = {}) {
+  async getWaitlist(dropId, filters = {}) {
     const { status, tier, limit = 100, offset = 0 } = filters
 
-    let query = `
-      SELECT
-        id,
-        collection_id,
-        user_id,
-        email,
-        tier,
-        position,
-        joined_at,
-        notified_at,
-        status
-      FROM drops_waitlist
-      WHERE collection_id = $1
-    `
-    const params = [collectionId]
+    let query = "SELECT id, drop_id, user_id, email, tier, status, joined_at, notified_at, converted_at, notification_opened FROM drops_waitlist WHERE drop_id = $1"
+    const params = [dropId]
     let paramCount = 2
 
     if (status) {
-      query += ` AND status = $${paramCount}`
+      query += " AND status = $" + paramCount.toString()
       params.push(status)
       paramCount++
     }
 
     if (tier) {
-      query += ` AND tier = $${paramCount}`
+      query += " AND tier = $" + paramCount.toString()
       params.push(tier)
       paramCount++
     }
 
-    // Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM (${query}) as filtered`
+    const countQuery = "SELECT COUNT(*) as total FROM (" + query + ") as filtered"
     const countResult = await pool.query(countQuery, params)
     const total = parseInt(countResult.rows[0].total)
 
-    // Add ordering and pagination
-    query += ` ORDER BY position ASC LIMIT $${paramCount} OFFSET $${paramCount + 1}`
+    query += " ORDER BY joined_at ASC LIMIT $" + paramCount.toString() + " OFFSET $" + (paramCount + 1).toString()
     params.push(limit, offset)
 
     const result = await pool.query(query, params)
@@ -226,182 +104,78 @@ export const dropService = {
     }
   },
 
-  /**
-   * Join waitlist for a drop collection
-   */
-  async joinWaitlist(collectionId, data) {
-    const { user_id, email, tier = 'explorer' } = data
+  async joinWaitlist(dropId, data) {
+    const { user_id, email, tier = 'standard' } = data
 
-    // Check if collection exists and waitlist is open
-    const collection = await this.getById(collectionId)
+    const drop = await this.getById(dropId)
 
-    if (collection.visibility === 'draft') {
-      throw new Error('This drop is not yet available for waitlist')
+    if (drop.status === 'cancelled') {
+      throw new Error('This drop has been cancelled')
     }
 
-    if (collection.waitlist_opens_at && new Date(collection.waitlist_opens_at) > new Date()) {
-      throw new Error('Waitlist is not yet open')
-    }
-
-    // Check if user already joined
-    const existingQuery = `
-      SELECT id FROM drops_waitlist
-      WHERE collection_id = $1 AND (user_id = $2 OR email = $3)
-      AND status = 'active'
-    `
-    const existing = await pool.query(existingQuery, [collectionId, user_id, email])
+    const existingQuery = "SELECT id FROM drops_waitlist WHERE drop_id = $1 AND user_id = $2"
+    const existing = await pool.query(existingQuery, [dropId, user_id])
 
     if (existing.rows.length > 0) {
       throw new Error('Already on waitlist for this drop')
     }
 
-    // Get next position
-    const positionQuery = `
-      SELECT COALESCE(MAX(position), 0) + 1 as next_position
-      FROM drops_waitlist
-      WHERE collection_id = $1
-    `
-    const positionResult = await pool.query(positionQuery, [collectionId])
-    const position = positionResult.rows[0].next_position
-
-    // Check max waitlist size
-    if (collection.max_waitlist_size && position > collection.max_waitlist_size) {
-      throw new Error('Waitlist is full')
-    }
-
-    // Insert waitlist entry
-    const insertQuery = `
-      INSERT INTO drops_waitlist (
-        collection_id,
-        user_id,
-        email,
-        tier,
-        position,
-        status
-      ) VALUES ($1, $2, $3, $4, $5, 'active')
-      RETURNING *
-    `
-
-    const result = await pool.query(insertQuery, [
-      collectionId,
-      user_id,
-      email,
-      tier,
-      position,
-    ])
+    const insertQuery = "INSERT INTO drops_waitlist (drop_id, user_id, email, tier, status) VALUES ($1, $2, $3, $4, 'waiting') RETURNING *"
+    const result = await pool.query(insertQuery, [dropId, user_id, email, tier])
 
     return result.rows[0]
   },
 
-  /**
-   * Create new drop collection
-   */
   async create(data) {
     const {
       name,
       slug,
-      description,
       theme,
       story,
-      drop_date,
-      end_date,
-      access_tiers,
-      visibility = 'draft',
-      banner_image_url,
+      hero_image_url,
       teaser_video_url,
-      waitlist_opens_at,
-      max_waitlist_size,
+      announcement_at,
+      launch_at,
+      ends_at,
+      status = 'upcoming',
+      waitlist_enabled = true,
+      pre_access_hours = 24,
     } = data
 
-    const query = `
-      INSERT INTO drops_collections (
-        name,
-        slug,
-        description,
-        theme,
-        story,
-        drop_date,
-        end_date,
-        access_tiers,
-        visibility,
-        banner_image_url,
-        teaser_video_url,
-        waitlist_opens_at,
-        max_waitlist_size
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-      RETURNING *
-    `
-
+    const query = "INSERT INTO drops_collections (name, slug, theme, story, hero_image_url, teaser_video_url, announcement_at, launch_at, ends_at, status, waitlist_enabled, pre_access_hours) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *"
     const result = await pool.query(query, [
       name,
       slug,
-      description,
       theme,
       story,
-      drop_date,
-      end_date,
-      access_tiers || [],
-      visibility,
-      banner_image_url,
+      hero_image_url,
       teaser_video_url,
-      waitlist_opens_at,
-      max_waitlist_size,
+      announcement_at,
+      launch_at,
+      ends_at,
+      status,
+      waitlist_enabled,
+      pre_access_hours,
     ])
 
     return result.rows[0]
   },
 
-  /**
-   * Add product to drop collection
-   */
-  async addProduct(collectionId, productData) {
-    const { product_id, allocation, tier_allocation } = productData
+  async addProduct(dropId, productData) {
+    const { product_id, display_order = 0, is_featured = false, allocated_inventory = 0 } = productData
 
-    // Check if collection exists
-    await this.getById(collectionId)
+    await this.getById(dropId)
 
-    const query = `
-      INSERT INTO drops_products (
-        collection_id,
-        product_id,
-        allocation,
-        tier_allocation
-      ) VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `
-
-    const result = await pool.query(query, [
-      collectionId,
-      product_id,
-      allocation,
-      tier_allocation || {},
-    ])
+    const query = "INSERT INTO drops_products (drop_id, product_id, display_order, is_featured, allocated_inventory) VALUES ($1, $2, $3, $4, $5) RETURNING *"
+    const result = await pool.query(query, [dropId, product_id, display_order, is_featured, allocated_inventory])
 
     return result.rows[0]
   },
 
-  /**
-   * Update drop collection
-   */
   async update(id, data) {
-    // First check if collection exists
     await this.getById(id)
 
-    const allowedFields = [
-      'name',
-      'slug',
-      'description',
-      'theme',
-      'story',
-      'drop_date',
-      'end_date',
-      'access_tiers',
-      'visibility',
-      'banner_image_url',
-      'teaser_video_url',
-      'waitlist_opens_at',
-      'max_waitlist_size',
-    ]
+    const allowedFields = ['name', 'slug', 'theme', 'story', 'hero_image_url', 'teaser_video_url', 'announcement_at', 'launch_at', 'ends_at', 'status', 'waitlist_enabled', 'pre_access_hours']
 
     const updates = []
     const values = []
@@ -409,7 +183,7 @@ export const dropService = {
 
     Object.keys(data).forEach((key) => {
       if (allowedFields.includes(key) && data[key] !== undefined) {
-        updates.push(`${key} = $${paramCount}`)
+        updates.push(key + " = $" + paramCount.toString())
         values.push(data[key])
         paramCount++
       }
@@ -420,31 +194,14 @@ export const dropService = {
     }
 
     values.push(id)
-    const query = `
-      UPDATE drops_collections
-      SET ${updates.join(', ')}
-      WHERE id = $${paramCount}
-      RETURNING *
-    `
-
+    const query = "UPDATE drops_collections SET " + updates.join(', ') + " WHERE id = $" + paramCount.toString() + " RETURNING *"
     const result = await pool.query(query, values)
     return result.rows[0]
   },
 
-  /**
-   * Delete drop collection (soft delete by setting visibility to archived)
-   */
   async delete(id) {
-    // First check if collection exists
     await this.getById(id)
-
-    const query = `
-      UPDATE drops_collections
-      SET visibility = 'archived'
-      WHERE id = $1
-      RETURNING id
-    `
-
+    const query = "UPDATE drops_collections SET status = 'cancelled' WHERE id = $1 RETURNING id"
     await pool.query(query, [id])
     return { id, deleted: true }
   },
