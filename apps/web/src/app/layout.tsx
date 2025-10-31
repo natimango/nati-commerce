@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display, Cormorant_Garamond } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
+import { Header } from '@/components/navigation/header'
 import './globals.css'
 
 const inter = Inter({
@@ -86,7 +87,10 @@ export default function RootLayout({
         lang="en"
         className={`${inter.variable} ${playfair.variable} ${cormorant.variable}`}
       >
-        <body className={inter.className}>{children}</body>
+        <body className={inter.className}>
+          <Header />
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   )
