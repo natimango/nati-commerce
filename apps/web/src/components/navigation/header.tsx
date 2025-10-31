@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 import { UserButton } from '@/components/auth/user-button'
+import { CartButton } from '@/components/cart/cart-button'
 
 export function Header() {
   const { isSignedIn } = useAuth()
@@ -39,6 +40,7 @@ export function Header() {
 
         {/* Auth Section */}
         <div className="flex items-center space-x-4">
+          <CartButton />
           {isSignedIn ? (
             <>
               <Link
