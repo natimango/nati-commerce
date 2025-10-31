@@ -10,6 +10,7 @@ import artFormsRouter from './routes/artForms.js'
 import artistsRouter from './routes/artists.js'
 import millsRouter from './routes/mills.js'
 import dropsRouter from './routes/drops.js'
+import productsRouter from './routes/products.js'
 
 const app = express()
 
@@ -60,6 +61,7 @@ app.use('/api/art-forms', artFormsRouter)
 app.use('/api/artists', artistsRouter)
 app.use('/api/mills', millsRouter)
 app.use('/api/drops', dropsRouter)
+app.use('/api/products', productsRouter)
 
 // 404 handler
 app.use((req, res) => {
