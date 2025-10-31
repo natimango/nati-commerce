@@ -8,12 +8,11 @@ const router = Router()
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const { is_active, mill_type, region, limit, offset } = req.query
+    const { is_active, mill_type, limit, offset } = req.query
 
     const result = await millService.getAll({
       is_active: is_active === 'true' ? true : is_active === 'false' ? false : undefined,
       mill_type,
-      region,
       limit: limit ? parseInt(limit) : undefined,
       offset: offset ? parseInt(offset) : undefined,
     })
@@ -30,19 +29,6 @@ router.get(
   '/:id',
   asyncHandler(async (req, res) => {
     const mill = await millService.getById(req.params.id)
-
-    res.json({
-      success: true,
-      data: mill,
-    })
-  })
-)
-
-// GET /api/mills/slug/:slug - Get mill by slug
-router.get(
-  '/slug/:slug',
-  asyncHandler(async (req, res) => {
-    const mill = await millService.getBySlug(req.params.slug)
 
     res.json({
       success: true,
