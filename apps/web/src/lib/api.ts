@@ -39,23 +39,23 @@ export async function getFeaturedProducts(limit: number = 8): Promise<Product[]>
 // Art Forms
 export async function getArtForms(): Promise<ArtForm[]> {
   const response = await api.get('/api/art-forms')
-  return response.data
+  return response.data.data || response.data
 }
 
 export async function getArtForm(slug: string): Promise<ArtForm> {
   const response = await api.get(`/api/art-forms/${slug}`)
-  return response.data
+  return response.data.data || response.data
 }
 
 // Artists
 export async function getArtists(): Promise<Artist[]> {
   const response = await api.get('/api/artists')
-  return response.data
+  return response.data.data || response.data
 }
 
 export async function getArtist(slug: string): Promise<Artist> {
   const response = await api.get(`/api/artists/${slug}`)
-  return response.data
+  return response.data.data || response.data
 }
 
 // Search
