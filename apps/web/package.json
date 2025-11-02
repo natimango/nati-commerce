@@ -22,7 +22,8 @@
     "tailwind-merge": "^2.5.4",
     "zod": "^3.23.8",
     "zustand": "^5.0.1",
-    "svix": "^1.37.0"
+    "svix": "^1.37.0",
+    "lucide-react": "^0.292.0"
   },
   "devDependencies": {
     "@types/node": "^22",
